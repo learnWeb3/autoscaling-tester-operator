@@ -1,63 +1,63 @@
 - name: Get the current job
   kubernetes.core.k8s_info:
-    api_version: autoscalingtestjobs.cache.students-epitech.ovh/v1alpha1
+    api_version: cache.students-epitech.ovh/v1alpha1
     kind: AutoscalingTestJob
     name: "{{ ansible_operator_meta.name }}"
     namespace: "{{ ansible_operator_meta.namespace }}"
-  register: crd_job
+  register: crd_resource
 
 - name: Generate a timestamp
   command: date -u +"%Y%m%d-%H%M%S"
   register: timestamp
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.uid | default('') == "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.uid | default('') == "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
 
 - name: Generate a random suffix
   shell: echo $((10000 + RANDOM % 90000))
   register: random_suffix
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.uid | default('') == "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.uid | default('') == "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
 
 - name: check timestamp and random_suffix values are defined
   debug:
     msg: "timestamp:{{ timestamp.stdout }} random_suffix:{{ random_suffix.stdout }}"
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.uid | default('') == "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.uid | default('') == "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
     - timestamp is defined
     - random_suffix is defined
 
 - name: Get current time before Update
   command: date -u +"%Y-%m-%dT%H:%M:%SZ"
-  register: crd_job_update_time
+  register: crd_resource_update_time
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.uid | default('') == "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.uid | default('') == "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
     - timestamp is defined
     - random_suffix is defined
 
 - name: Update the CRD uid
   kubernetes.core.k8s:
     state: patched
-    job_definition:
-      apiVersion: autoscalingtestjobs.cache.students-epitech.ovh/v1alpha1
+    resource_definition:
+      apiVersion: cache.students-epitech.ovh/v1alpha1
       kind: AutoscalingTestJob
       metadata:
         name: "{{ ansible_operator_meta.name }}"
         namespace: "{{ ansible_operator_meta.namespace }}"
       spec:
         uid: "{{ timestamp.stdout }}{{ random_suffix.stdout }}"
-        lastUpdatedTimestamp: "{{ crd_job_update_time.stdout }}"
+        lastUpdatedTimestamp: "{{ crd_resource_update_time.stdout }}"
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.uid | default('') == "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.uid | default('') == "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
     - timestamp is defined
     - random_suffix is defined
 
@@ -65,46 +65,50 @@
   kubernetes.core.k8s_info:
     api_version: apps/v1
     kind: Deployment
-    name: "job-{{ crd_job.jobs[0].spec.uid }}"
+    name: "job-{{ crd_resource.resources[0].spec.uid }}"
     namespace: "{{ ansible_operator_meta.namespace }}"
-  register: job
+  register: job_resource
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.uid | default('') != "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
 
 - name: Get job deployment container spec
-  command: >
-    echo '{
-      "name": "job-{{ crd_job.jobs[0].spec.uid }}",
-      "image": "{{ crd_job.jobs[0].spec.job.image }}",
-      "imagePullPolicy": "IfNotPresent",
-      "resources": {{ crd_job.jobs[0].spec.job.resources }},
-      {% if crd_job.jobs[0].spec.command is defined %} "command": {{ crd_job.jobs[0].spec.command | to_json }},{% endif %}
-      {% if crd_job.jobs[0].spec.args is defined %}"args": {{ crd_job.jobs[0].spec.args | to_json }},{% endif %}
-      "envFrom": [
-        {"configMapRef": {"name": "{{ crd_job.jobs[0].spec.job.configMapRef }}" }},
-        {"secretRef": {"name": "{{ crd_job.jobs[0].spec.job.secretRef }}" }}
-      ]
-    }'
-  register: container_spec
+  template:
+    src: templates/job_deployment_container_spec.yml.j2
+    dest: /tmp/job_deployment_container_spec.yml
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.uid | default('') != "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status | default('') == "Pending")
+
+- name: Load job deployment container spec
+  command: cat /tmp/job_deployment_container_spec.yml
+  register: job_deployment_container_spec_file
+  when:
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status | default('') == "Pending")
+
+- debug:
+    var: job_deployment_container_spec_file.stdout | from_yaml
+  when:
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status | default('') == "Pending")
 
 - name: Create job deployment if does not exists
   kubernetes.core.k8s:
     state: present
     wait: true
-    job_definition:
+    resource_definition:
       - apiVersion: apps/v1
         kind: Deployment
         metadata:
-          name: "job-{{ crd_job.jobs[0].spec.uid }}"
+          name: "job-{{ crd_resource.resources[0].spec.uid }}"
           namespace: "{{ ansible_operator_meta.namespace }}"
           labels:
-            tier: "job-{{ crd_job.jobs[0].spec.uid }}"
+            tier: "job-{{ crd_resource.resources[0].spec.uid }}"
         spec:
           strategy:
             rollingUpdate:
@@ -112,73 +116,73 @@
               maxUnavailable: 1
             type: RollingUpdate
           replicas: |
-            {{ crd_job.jobs[0].spec.job.replicas | int }}
+            {{ crd_resource.resources[0].spec.job.replicas | int }}
           selector:
             matchLabels:
-              tier: "job-{{ crd_job.jobs[0].spec.uid }}"
+              tier: "job-{{ crd_resource.resources[0].spec.uid }}"
           template:
             metadata:
               labels:
-                tier: "job-{{ crd_job.jobs[0].spec.uid }}"
+                tier: "job-{{ crd_resource.resources[0].spec.uid }}"
             spec:
               containers:
-                - "{{ container_spec | from_json }}"
+                - "{{ job_deployment_container_spec_file.stdout | from_yaml }}"
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.uid | default('') != "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
-    - (job.jobs | length) == 0
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
+    - (job_resource.resources | length) == 0
 
 - name: Get current time before Update
   command: date -u +"%Y-%m-%dT%H:%M:%SZ"
-  register: crd_job_update_time
+  register: crd_resource_update_time
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.uid | default('') != "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
 
 - name: Update the CRD status to Running
   kubernetes.core.k8s:
     state: patched
-    job_definition:
-      apiVersion: autoscalingtestjobs.cache.students-epitech.ovh/v1alpha1
+    resource_definition:
+      apiVersion: cache.students-epitech.ovh/v1alpha1
       kind: AutoscalingTestJob
       metadata:
         name: "{{ ansible_operator_meta.name }}"
         namespace: "{{ ansible_operator_meta.namespace }}"
       spec:
         status: "Running"
-        lastUpdatedTimestamp: "{{ crd_job_update_time.stdout }}"
+        lastUpdatedTimestamp: "{{ crd_resource_update_time.stdout }}"
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.uid | default('') != "")
-    - (crd_job.jobs[0].spec.status| default('') == "Pending")
-    - (job.jobs | length) > 0
-    - job.jobs[0].status.availableReplicas == job.jobs[0].spec.replicas
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.uid | default('') != "")
+    - (crd_resource.resources[0].spec.status| default('') == "Pending")
+    - (job_resource.resources | length) > 0
+    - job_resource.resources[0].status.availableReplicas == job_resource.resources[0].spec.replicas
 
 - name: Get current time before Update
   command: date -u +"%Y-%m-%dT%H:%M:%SZ"
-  register: crd_job_update_time
+  register: crd_resource_update_time
   when:
-    - (crd_job.jobs | length) > 0
-    - (crd_job.jobs[0].spec.status | default('') == "Running")
+    - (crd_resource.resources | length) > 0
+    - (crd_resource.resources[0].spec.status | default('') == "Running")
 
 - name: Update the CRD status to Completed
   kubernetes.core.k8s:
     state: patched
-    job_definition:
-      apiVersion: autoscalingtestjobs.cache.students-epitech.ovh/v1alpha1
+    resource_definition:
+      apiVersion: cache.students-epitech.ovh/v1alpha1
       kind: AutoscalingTestJob
       metadata:
         name: "{{ ansible_operator_meta.name }}"
         namespace: "{{ ansible_operator_meta.namespace }}"
       spec:
         status: "Completed"
-        lastUpdatedTimestamp: "{{ crd_job_update_time.stdout }}"
+        lastUpdatedTimestamp: "{{ crd_resource_update_time.stdout }}"
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.status| default('') == "Running")
-    - (crd_job.jobs[0].spec.lastUpdatedTimestamp + crd_job.jobs[0].spec.durationMs >= crd_job_update_time )
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.status| default('') == "Running")
+    - ((crd_resource.resources[0].spec.lastUpdatedTimestamp | to_datetime('%Y-%m-%dT%H:%M:%SZ') | int ) + crd_resource.resources[0].spec.job.durationMs >= (crd_resource_update_time.stdout | to_datetime('%Y-%m-%dT%H:%M:%SZ') | int) )
 
 - name: Delete job deployment
   kubernetes.core.k8s:
@@ -186,10 +190,10 @@
     namespace: "{{ ansible_operator_meta.namespace }}"
     api_version: apps/v1
     kind: Deployment
-    name: "job-{{ crd_job.jobs[0].spec.uid }}"
+    name: "job-{{ crd_resource.resources[0].spec.uid }}"
     wait: true
     delete_options:
       propagationPolicy: "Foreground"
   when:
-    - crd_job.jobs | length > 0
-    - (crd_job.jobs[0].spec.status| default('') == "Completed")
+    - crd_resource.resources | length > 0
+    - (crd_resource.resources[0].spec.status| default('') == "Completed")

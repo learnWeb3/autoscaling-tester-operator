@@ -1,0 +1,19 @@
+apiVersion: cache.students-epitech.ovh/v1alpha1
+kind: AutoscalingTestJob
+metadata:
+  name: kubequest
+spec:
+  job:
+    durationMs: 60000
+    replicas: 10
+    image: antoineleguillou/alpine-curl:latest
+    command: ["sh", "-c"]
+    args:
+      - while true; do curl --fail -X GET 'http://kubequest.kubequest.svc.cluster.local:80'; sleep 1; done;
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 250Mi

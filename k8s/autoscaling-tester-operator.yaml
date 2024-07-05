@@ -54,7 +54,7 @@ spec:
       serviceAccountName: autoscaling-tester-operator
       containers:
         - name: autoscaling-tester-operator
-          image: antoineleguillou/autoscaling-tester-operator:2024-07-05.1
+          image: antoineleguillou/autoscaling-tester-operator:2024-07-06.14
           imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE

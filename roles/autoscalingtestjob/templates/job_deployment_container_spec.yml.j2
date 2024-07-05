@@ -1,0 +1,21 @@
+name: "job-{{ crd_resource.resources[0].spec.uid }}"
+image: "{{ crd_resource.resources[0].spec.job.image }}"
+imagePullPolicy: "IfNotPresent"
+resources: {{ crd_resource.resources[0].spec.job.resources  }}
+{% if crd_resource.resources[0].spec.job.command is defined %}
+command: {{ crd_resource.resources[0].spec.job.command  }}
+{% endif %}
+{% if crd_resource.resources[0].spec.job.args is defined %}
+args: {{ crd_resource.resources[0].spec.job.args }}
+{% endif %}
+{% if (crd_resource.resources[0].spec.job.configMapRef is defined and crd_resource.resources[0].spec.job.configMapRef) or (crd_resource.resources[0].spec.job.secretRef is defined and crd_resource.resources[0].spec.job.secretRef) %}
+envFrom:
+  {% if crd_resource.resources[0].spec.job.configMapRef is defined and crd_resource.resources[0].spec.job.configMapRef  %}
+  - configMapRef:
+      name: "{{ crd_resource.resources[0].spec.job.configMapRef }}"
+  {% endif %}
+  {% if crd_resource.resources[0].spec.job.secretRef is defined and crd_resource.resources[0].spec.job.secretRef %}
+  - secretRef:
+      name: "{{ crd_resource.resources[0].spec.job.secretRef }}"
+  {% endif %}
+{% endif %}
