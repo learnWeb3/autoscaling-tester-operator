@@ -1,0 +1,126 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: autoscalingtestjobs.cache.students-epitech.ovh
+spec:
+  group: cache.students-epitech.ovh
+  names:
+    kind: AutoscalingTestJob
+    listKind: AutoscalingTestJobList
+    plural: autoscalingtestjobs
+    singular: autoscalingtestjob
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: AutoscalingTestJob is the Schema for the autoscalingtestjobs API
+          properties:
+            apiVersion:
+              description:
+                "APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources"
+              type: string
+            kind:
+              description:
+                "Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: Spec defines the desired state of AutoscalingTestJob
+              type: object
+              properties:
+                uid:
+                  type: string
+                  default: ""
+                  description: "unique identifier for job"
+                lastUpdatedTimestamp:
+                  type: string
+                  default: ""
+                  description: "last update timestamp"
+                status:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Completed
+                  default: "Pending"
+                job:
+                  type: object
+                  description: "properties related to the job"
+                  properties:
+                    image:
+                      type: string
+                      description: "image to be used for the job"
+                    secretRef:
+                      type: string
+                      description: "secret to be used for the job"
+                    configMapRef:
+                      type: string
+                      description: "configmap to be used for the job"
+                    durationMs:
+                      type: integer
+                      description: "Job duration"
+                      default: 600000 # 10min
+                    replicas:
+                      type: integer
+                      description: "replicas count"
+                      default: 1
+                    command:
+                      type: array
+                      items:
+                        type: string
+                      description: Command to run inside the container.
+                    args:
+                      type: array
+                      items:
+                        type: string
+                      description: Arguments to the command.
+                    resources:
+                      type: object
+                      default: {}
+                      properties:
+                        limits:
+                          type: object
+                          properties:
+                            cpu:
+                              type: string
+                            memory:
+                              type: string
+                        requests:
+                          type: object
+                          properties:
+                            cpu:
+                              type: string
+                            memory:
+                              type: string
+            status:
+              description: Status defines the observed state of AutoscalingTestJob
+              type: object
+              properties: {}
+      additionalPrinterColumns:
+        - name: status
+          type: string
+          description: "status of the job"
+          jsonPath: ".spec.status"
+        - name: last update
+          type: string
+          description: "last update to the job"
+          jsonPath: ".spec.lastUpdatedTimestamp"
+        - name: duration (ms)
+          type: integer
+          description: "duration of the job"
+          jsonPath: ".spec.job.durationMs"
+        - name: replicas
+          type: integer
+          description: "replicas count"
+          jsonPath: ".spec.job.replicas"
+      served: true
+      storage: true
+      subresources:
+        status: {}

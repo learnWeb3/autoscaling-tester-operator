@@ -1,0 +1,12 @@
+apiVersion: cache.students-epitech.ovh/v1alpha1
+kind: AutoscalingTestJob
+metadata:
+  labels:
+    app.kubernetes.io/name: autoscalingtestjob
+    app.kubernetes.io/instance: autoscalingtestjob-sample
+    app.kubernetes.io/part-of: autoscaling-tester-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: autoscaling-tester-operator
+  name: autoscalingtestjob-sample
+spec:
+  # TODO(user): Add fields here

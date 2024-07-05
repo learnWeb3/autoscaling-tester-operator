@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: autoscaling-tester-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: autoscaling-tester-operator-role
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get", "update"]
+
+  - apiGroups: ["cache.students-epitech.ovh"]
+    resources: ["autoscalingtestjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+
+  - apiGroups: ["cache.students-epitech.ovh"]
+    resources: ["autoscalingtestjobs/status"]
+    verbs: ["get", "update"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: autoscaling-tester-operator-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: autoscaling-tester-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: autoscaling-tester-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaling-tester-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaling-tester-operator
+  template:
+    metadata:
+      labels:
+        app: autoscaling-tester-operator
+    spec:
+      serviceAccountName: autoscaling-tester-operator
+      containers:
+        - name: autoscaling-tester-operator
+          image: antoineleguillou/autoscaling-tester-operator:2024-07-05.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ANSIBLE_DEBUG_LOGS
+              value: "True"
+            - name: ANSIBLE_JINJA2_NATIVE
+              value: "True"
+          resources:
+            limits:
+              cpu: 350m
+              memory: 450Mi
+            requests:
+              cpu: 250m
+              memory: 250Mi
