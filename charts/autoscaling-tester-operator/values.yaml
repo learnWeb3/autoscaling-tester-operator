@@ -1,0 +1,10 @@
+image: antoineleguillou/autoscaling-tester-operator:2024-07-09.22
+replicas: 1
+progressDeadlineSeconds: 600
+resources:
+  limits:
+    cpu: 350m
+    memory: 450Mi
+  requests:
+    cpu: 250m
+    memory: 250Mi

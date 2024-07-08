@@ -57,6 +57,9 @@ spec:
                     image:
                       type: string
                       description: "image to be used for the job"
+                    progressDeadlineSeconds: 
+                      type: integer
+                      description: "the maximum time allowed for the deployment to signal an update (replicas start) in second"
                     secretRef:
                       type: string
                       description: "secret to be used for the job"

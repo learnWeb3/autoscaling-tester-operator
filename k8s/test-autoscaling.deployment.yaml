@@ -23,7 +23,7 @@ spec:
       containers:
         - name: kubequest
           imagePullPolicy: IfNotPresent
-          image: antoineleguillou/alpine-curl:latest
+          image: antoineleguillou/alpine-curl:2024-07-12.1
           command: ["sh", "-c"]
           args:
             - |

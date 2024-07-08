@@ -110,6 +110,8 @@
           labels:
             tier: "job-{{ crd_resource.resources[0].spec.uid }}"
         spec:
+          progressDeadlineSeconds: |
+            {{ crd_resource.resources[0].spec.job.progressDeadlineSeconds  | default(600) | int }}
           strategy:
             rollingUpdate:
               maxSurge: 1

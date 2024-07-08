@@ -4,16 +4,17 @@ metadata:
   name: kubequest
 spec:
   job:
-    durationMs: 60000
+    durationMs: 300000
     replicas: 10
-    image: antoineleguillou/alpine-curl:latest
+    image: antoineleguillou/alpine-curl:2024-07-12.1
     command: ["sh", "-c"]
+    progressDeadlineSeconds: 10
     args:
-      - while true; do curl --fail -X GET 'http://kubequest.kubequest.svc.cluster.local:80'; sleep 1; done;
+      - while true; do curl --fail -X GET 'http://kubequest.kubequest.svc.cluster.local:80'; sleep 2; done;
     resources:
       requests:
+        cpu: 10m
+        memory: 50Mi
+      limits:
         cpu: 50m
         memory: 100Mi
-      limits:
-        cpu: 100m
-        memory: 250Mi

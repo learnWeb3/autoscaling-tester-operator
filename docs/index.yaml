@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  autoscaling-tester-operator:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-07-08T17:38:13.423441+02:00"
+    description: A Helm chart for Kubernetes
+    digest: 80da6977d06427f0e2c56814634960b8df2e78989f2f1d09f15f6312ee65ace1
+    name: autoscaling-tester-operator
+    type: application
+    urls:
+    - https://learnweb3.github.io/autoscaling-tester-operator/autoscaling-tester-operator-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-07-08T17:38:13.422131+02:00"
